@@ -4,6 +4,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  // Función para eliminar un participante
+  async function removeParticipant(activity, participant) {
+    try {
+      const response = await fetch(
+        `/activities/${encodeURIComponent(activity)}/remove?email=${encodeURIComponent(participant)}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        alert(`${participant} ha sido eliminado de ${activity}`);
+        fetchActivities(); // Recargar actividades
+      } else {
+        const result = await response.json();
+        alert(result.detail || "Error al eliminar al participante");
+      }
+    } catch (error) {
+      console.error("Error al eliminar al participante:", error);
+      alert("No se pudo eliminar al participante. Inténtalo de nuevo.");
+    }
+  }
+
+  // Exponer la función removeParticipant al ámbito global
+  window.removeParticipant = removeParticipant;
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
@@ -12,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -29,7 +56,15 @@ document.addEventListener("DOMContentLoaded", () => {
           <ul>
             ${
               details.participants.length > 0
-                ? details.participants.map((participant) => `<li>${participant}</li>`).join("")
+                ? details.participants
+                    .map(
+                      (participant) => `
+                        <li>
+                          ${participant}
+                          <span class="delete-icon" onclick="removeParticipant('${name}', '${participant}')">&times;</span>
+                        </li>`
+                    )
+                    .join("")
                 : "<li>No participants yet</li>"
             }
           </ul>
